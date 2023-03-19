@@ -10,7 +10,7 @@ Config:
 	[title] [String]: 曲目标题
 	[read_remote_dl_with_head] [Boolean]: 读取需要下载的曲目时读取文件夹名称带 dl_ 前缀
 	[localized] [String]: 本地化 与 songlist 中对应
-	[rating_class] [Number(Int)]: 难度标识 (暂不支持自定义难度及颜色 小于0或大于2会自动设置为0 (Past))
+	[rating_class] [Number(Int)]: 难度标识 (暂不支持自定义颜色 小于0或大于2会自动设置为0 (Past))
 	[top_title_ascii] [String]: 左上角的标题 (字体不支持中文字符 使用中文字符导致的问题本人不承担)
 	[title_font_file_path] [String]: 曲目标题 字体文件路径 (请将字体放在 Fonts 文件夹下) 如果找不到会使用默认字体
 	[artist_font_file_path] [String]: 曲目作者 字体文件路径 (请将字体放在 Fonts 文件夹下) 如果找不到会使用默认字体
@@ -32,8 +32,4 @@ Config:
 		[RatioYtb]: Youtube 视频封面比例 (16:9)
 			[Modifier] [Number(Int)]: 1 (ModifierKeys.Alt)
 			[Key] [Number(Int)]: 68 (Key.Y)
->>>>>>>>>>>>>>>>>>>>>>>>>>
-寻找曲目依靠 [index] 和 [title]
-如果 [title] 为 null 或空则使用 [index] 来寻找曲目
-(使用 [title] 寻找曲目会尝试匹配所有曲目中的标题(包括所有的难度))
 >>>>>>>>>>>>>>>>>>>>>>>>>>
