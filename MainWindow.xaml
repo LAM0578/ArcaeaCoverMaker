@@ -1,0 +1,13 @@
+﻿<Window x:Class="ArcaeaCoverMaker.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ArcaeaCoverMaker"
+		xmlns:skiawpf="clr-namespace:SkiaSharp.Views.WPF;assembly=SkiaSharp.Views.WPF"
+        mc:Ignorable="d"
+        Title="Arcaea Cover Maker" Height="450" Width="800" KeyDown="HotkeyTarget" Icon="/Icon.png">
+    <Grid>
+		<skiawpf:SKElement x:Name="SkiaElement" PaintSurface="SkiaElement_PaintSurface"/>
+	</Grid>
+</Window>

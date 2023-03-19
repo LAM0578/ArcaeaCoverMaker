@@ -1,0 +1,47 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <ApplicationIcon>Resources\Icon.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Exo-SemiBold.ttf" />
+    <None Remove="Icon.png" />
+    <None Remove="internal_bg_light.png" />
+    <None Remove="LogManager.cs.bak" />
+    <None Remove="Resources\Backgrounds\internal_bg_conflict.png" />
+    <None Remove="Resources\Backgrounds\internal_bg_light.png" />
+    <None Remove="Resources\Fonts\Exo-SemiBold.ttf" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Resources\Icon.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Backgrounds\internal_bg_conflict.png" />
+    <EmbeddedResource Include="Resources\Backgrounds\internal_bg_light.png" />
+    <EmbeddedResource Include="Resources\Fonts\Exo-SemiBold.ttf" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
+    <PackageReference Include="SkiaSharp" Version="2.88.3" />
+    <PackageReference Include="SkiaSharp.Views.WPF" Version="2.88.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Icon.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Readme_zhHans.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>
