@@ -8,11 +8,19 @@
     <ApplicationIcon>Resources\Icon.ico</ApplicationIcon>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
   <ItemGroup>
     <None Remove="Exo-SemiBold.ttf" />
     <None Remove="Icon.png" />
     <None Remove="internal_bg_light.png" />
-    <None Remove="LogManager.cs.bak" />
+    <None Remove="Readme_zhHans.txt" />
     <None Remove="Resources\Backgrounds\internal_bg_conflict.png" />
     <None Remove="Resources\Backgrounds\internal_bg_light.png" />
     <None Remove="Resources\Fonts\Exo-SemiBold.ttf" />
@@ -39,7 +47,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Readme_zhHans.txt">
+    <None Update="Tuorial_zh-hans.md">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
