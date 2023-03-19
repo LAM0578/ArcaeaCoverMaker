@@ -26,7 +26,7 @@ Arcaea-Cover-Maker 是一款用于制作 Arcaea 自制视频封面的软件
 
 Config.json 文件说明
 -
-~~~json
+~~~jsonc
 {
     "index": int, // 搜索时使用的曲目索引值 (对应曲目在 songlist 中的 idx)
     "title": string, // 搜索时使用的曲目标题
