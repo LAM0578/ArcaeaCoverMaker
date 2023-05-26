@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Newtonsoft.Json;
+using ArcaeaCoverMaker.Util;
 
 namespace ArcaeaCoverMaker
 {
@@ -25,17 +26,26 @@ namespace ArcaeaCoverMaker
 
 		public string GetTitle(string localized)
 		{
+			// Try get value from the dictionary TitleLocalized by the key localized
 			TitleLocalized.TryGetValue(localized, out var result);
 			return result ?? "";
 		}
 		public string GetArtist(string localized)
 		{
+			// Return the string Artist if it's not null or empty
 			if (!string.IsNullOrEmpty(Artist)) return Artist;
+
+			// Try get value from the dictionary ArtistLocalized by the key localized
 			ArtistLocalized.TryGetValue(localized, out var result);
+
+			// Return "" if the string result is null
 			return result ?? "";
 		}
 
-		public string RatingStr
+		/// <summary>
+		/// The string of the rating. (return "?" if the rating is equal to 0)
+		/// </summary>
+		public string RatingString
 			=> new StringBuilder(Rating == 0 ? "?" : Rating.ToString())
 				.Append(RatingPlus ? "+" : "").ToString();
 	}
@@ -58,9 +68,9 @@ namespace ArcaeaCoverMaker
 		[JsonProperty("difficulties")] public List<ArcSongDifficult> Difficulties = new();
 
 		/// <summary>
-		/// Find difficult object by id.
+		/// Find the difficult class by difficult class ID (rating class).
 		/// </summary>
-		/// <param name="id"></param>
+		/// <param name="id">Difficult class ID</param>
 		/// <returns></returns>
 		public ArcSongDifficult? FindDifficult(int id)
 		{
@@ -68,9 +78,9 @@ namespace ArcaeaCoverMaker
 		}
 
 		/// <summary>
-		/// Find difficult object by song title.
+		/// Find the difficult class by the song title.
 		/// </summary>
-		/// <param name="title"></param>
+		/// <param name="title">Song title</param>
 		/// <returns></returns>
 		public ArcSongDifficult? FindDifficult(string title)
 		{
@@ -79,25 +89,35 @@ namespace ArcaeaCoverMaker
 
 		public string GetTitle(string localized, int diffId)
 		{
-			//
+			// Find the difficult class by difficult class ID
 			ArcSongDifficult? diff = FindDifficult(diffId);
 			string? result;
+
+			// Return the title from the difficult class if it's not null and the result is not null or empty
 			if (diff != null && !string.IsNullOrEmpty(result = diff.GetTitle(localized))) 
 				return result;
-			//
+
+			// Try get value from the dictionary TitleLocalized by the key localized
 			TitleLocalized.TryGetValue(localized, out result);
+
+			// Return "" if the string result is null
 			return result ?? "";
 		}
 		public string GetArtist(string localized, int diffId)
 		{
-			//
+			// Find the difficult class by difficult class ID
 			ArcSongDifficult? diff = FindDifficult(diffId);
 			string? result;
 			if (diff != null && !string.IsNullOrEmpty(result = diff.GetArtist(localized)))
 				return result;
-			//
+
+			// Return the string Artist if it's not null or empty
 			if (!string.IsNullOrEmpty(Artist)) return Artist;
+
+			// Try get value from the dictionary ArtistLocalized by the key localized
 			ArtistLocalized.TryGetValue(localized, out result);
+
+			// Return "" if the string result is null
 			return result ?? "";
 		}
 
@@ -112,9 +132,9 @@ namespace ArcaeaCoverMaker
 		[JsonProperty("songs")] public List<ArcSong> Songs = new();
 
 		/// <summary>
-		/// Find song by index (idx).
+		/// Find the song class by the song index (idx).
 		/// </summary>
-		/// <param name="index"></param>
+		/// <param name="index">Song index</param>
 		/// <returns></returns>
 		public ArcSong? FindSong(int index)
 		{
@@ -122,10 +142,10 @@ namespace ArcaeaCoverMaker
 		}
 
 		/// <summary>
-		/// Find song by song title.
+		/// Find the song class by the song title.
 		/// </summary>
-		/// <param name="title"></param>
-		/// <param name="diffId"></param>
+		/// <param name="title">Song title</param>
+		/// <param name="diffId">Difficult class ID</param>
 		/// <returns></returns>
 		public ArcSong? FindSong(string? title, int diffId)
 		{
@@ -138,11 +158,11 @@ namespace ArcaeaCoverMaker
 		}
 
 		/// <summary>
-		/// 
+		/// Find the song class by the title or the song index.
 		/// </summary>
-		/// <param name="title"></param>
-		/// <param name="index"></param>
-		/// <param name="diffId"></param>
+		/// <param name="title">Song title</param>
+		/// <param name="index">Song index</param>
+		/// <param name="diffId">Difficult class ID</param>
 		/// <returns></returns>
 		public ArcSong FindSong(string title, int index, int diffId)
 		{

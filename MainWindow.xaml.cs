@@ -1,39 +1,52 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Reflection;
-using IO = System.IO;
-using Newtonsoft.Json;
+using System.Diagnostics;
+using System.Windows.Input;
+using System.Collections.Generic;
 using SkiaSharp;
 using SkiaSharp.Views.Desktop;
-using System.Diagnostics;
-using ArcaeaCoverMaker.Hotkey;
-using SkiaSharp.Views.WPF;
+using ArcaeaCoverMaker.Logging;
+using ArcaeaCoverMaker.Config;
+using ArcaeaCoverMaker.Json;
+using ArcaeaCoverMaker.Util;
+using IO = System.IO;
+using Newtonsoft.Json;
+using System.Runtime.CompilerServices;
 
-#pragma warning disable 8600, 8601, 8604
+#pragma warning disable 8600, 8601, 8604, 8618
 namespace ArcaeaCoverMaker
 {
-	/// <summary>
-	/// Interaction logic for MainWindow.xaml
-	/// </summary>
-	public partial class MainWindow : Window
+    /// <summary>
+    /// Interaction logic for MainWindow.xaml
+    /// </summary>
+    public partial class MainWindow : Window
 	{
 		public MainWindow()
 		{
-			InitializeComponent();
-			Reload();
+			CreateLogger();
+			try
+			{
+				InitializeComponent();
+				Reload();
+			}
+			catch (Exception ex)
+			{
+				Logger.LogError(ex.Message, ex);
+			}
 		}
+
+		private static void CreateLogger()
+		{
+			string logDir = IO.Path.Combine(AppContext.BaseDirectory, "Logs");
+			IO.Directory.CreateDirectory(logDir);
+
+			string logPath = IO.Path.Combine(logDir, $"log_{DateTime.Now.Ticks}.log");
+			Logger = Logger.CreateLogger(logPath);
+		}
+
+		private static Logger Logger;
 
 		private static readonly string AppBaseDirectory = AppContext.BaseDirectory;
 		private static readonly Dictionary<string, string> Directories = new()
@@ -51,7 +64,7 @@ namespace ArcaeaCoverMaker
 		private Dictionary<string, SKBitmap?> CoverBitmaps = new();
 
 		private static ArcSonglist Songlist = new();
-		private static Config Config = new();
+		private static CoverMakerConfig Config = new();
 		private static HotkeyConfig HotkeyConfig = new();
 
 		private ArcSong CurrentSong = new();
@@ -63,6 +76,7 @@ namespace ArcaeaCoverMaker
 
 		private bool IsCapture;
 
+		private static SKColor? CustomDifficultColor = null;
 		private static readonly SKColor[] DifficultColors = new SKColor[]
 		{
 			new SKColor(0x0a,0x82,0xbe,255),
@@ -71,27 +85,8 @@ namespace ArcaeaCoverMaker
 			new SKColor(0x82,0x23,0x28,255),
 		};
 
-		private static SKBitmap CheckBacgroundExist(string path, string sourcePath)
-		{
-			using var fs = IO.File.Exists(path) ?
-				IO.File.OpenRead(path) : GetStreamFromExecutingAssembly(sourcePath);
-			return SKBitmap.Decode(fs);
-		}
-
-		private static void LoadInternal()
-		{
-			InternalBackgrounds = new()
-			{
-				CheckBacgroundExist(
-					 IO.Path.Combine(Directories["Background"], "base_light.jpg"),
-					 "Backgrounds.internal_bg_light.png"),
-				CheckBacgroundExist(
-					 IO.Path.Combine(Directories["Background"], "base_conflict.jpg"),
-					 "Backgrounds.internal_bg_conflict.png")
-			};
-		}
-
-		private void CheckDirectories()
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static void CheckDirectories()
 		{
 			foreach (var item in Directories)
 			{
@@ -99,32 +94,78 @@ namespace ArcaeaCoverMaker
 			}
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static void WriteDataIfNotExists(string path, string? data)
+		{
+			try
+			{
+				if (!IO.File.Exists(path) || string.IsNullOrEmpty(IO.File.ReadAllText(path)))
+					IO.File.WriteAllText(path, data);
+			}
+			catch (Exception ex)
+			{
+				Logger.LogError(ex.Message, ex);
+			}
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static void LoadInternalBackgrounds()
+		{
+			InternalBackgrounds = new()
+			{
+				Helper.SetInternalBacgroundIfExist(
+					 IO.Path.Combine(Directories["Background"], "base_light.jpg"),
+					 "Backgrounds.internal_bg_light.png"),
+				Helper.SetInternalBacgroundIfExist(
+					 IO.Path.Combine(Directories["Background"], "base_conflict.jpg"),
+					 "Backgrounds.internal_bg_conflict.png")
+			};
+		}
+
 		/// <summary>
-		/// Load files.
+		/// Unload all skia bitmap resources.
 		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private void Unload()
+		{
+			foreach (var item in CoverBitmaps)
+			{
+				item.Value?.Dispose();
+			}
+			CoverBitmaps.Clear();
+
+			foreach (var item in BackgroundBitmaps)
+			{
+				item.Value?.Dispose();
+			}
+			BackgroundBitmaps.Clear();
+		}
+
+		/// <summary>
+		/// Load config from file and load images from files.
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private void Load()
 		{
 			//// File ////
-			if (!IO.File.Exists(SonglistPath))
-				IO.File.WriteAllText(SonglistPath, null);
+			
+			WriteDataIfNotExists(SonglistPath, null);
+			WriteDataIfNotExists(ConfigPath, 
+				  JsonConvert.SerializeObject(new CoverMakerConfig(), Formatting.Indented));
 
-			if (!IO.File.Exists(ConfigPath) ||
-				string.IsNullOrEmpty(IO.File.ReadAllText(ConfigPath)))
-				IO.File.WriteAllText(ConfigPath,
-					  JsonConvert.SerializeObject(new Config(), Formatting.Indented));
 			//////////////
+
+			Unload();
 
 			// Load songlist
 			Songlist = Utility.TryDeserializeObject<ArcSonglist>(IO.File.ReadAllText(SonglistPath));
 
 			// Load config
-			Config = Utility.TryDeserializeObject<Config>(IO.File.ReadAllText(ConfigPath));
+			Config = Utility.TryDeserializeObject<CoverMakerConfig>(IO.File.ReadAllText(ConfigPath));
 			HotkeyConfig = Config.HotkeyConfig;
 
-			CoverBitmaps.Clear();
-			BackgroundBitmaps.Clear();
-
 			Config.Difficult = (Config.Difficult < 0 || Config.Difficult > 3) ? 0 : Config.Difficult;
+			ColorUtility.TryParseSKColor(Config.CustomDifficultColorHex, out CustomDifficultColor);
 
 			// Load cover images from song folder
 			if (Songlist.Songs != null)
@@ -154,28 +195,32 @@ namespace ArcaeaCoverMaker
 			}
 
 			string backgroundName = CurrentSong.GetBackgroundName(Config.Difficult);
-			BackgroundBitmaps.TryGetValue(backgroundName, out CurrentBackground);
 			if (string.IsNullOrEmpty(backgroundName))
 			{
 				CurrentBackground = InternalBackgrounds[CurrentSong.Side == 1 ? 1 : 0];
+			}
+			else
+			{
+				BackgroundBitmaps.TryGetValue(backgroundName, out CurrentBackground);
 			}
 
 			CoverBitmaps.TryGetValue(CurrentSong.AsciiId ?? "", out CurrentCover);
 
 			// Print load info
-			Trace.WriteLine($"CoverBitmaps.Count: {CoverBitmaps.Count}\n" +
+			Logger.LogMessage($"CoverBitmaps.Count: {CoverBitmaps.Count}{Environment.NewLine}" +
 				$"BackgroundBitmaps.Count: {BackgroundBitmaps.Count}");
 
 			SkiaElement.InvalidateVisual();
 		}
 
 		/// <summary>
-		/// Reload and re-draw canvas.
+		/// Reload files and re-draw the canvas.
 		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private void Reload()
 		{
 			CheckDirectories();
-			LoadInternal();
+			LoadInternalBackgrounds();
 			Load();
 			GC.Collect();
 		}
@@ -183,6 +228,7 @@ namespace ArcaeaCoverMaker
 		/// <summary>
 		/// Capture surface content and save.
 		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private void Capture()
 		{
 			IsCapture = true;
@@ -194,6 +240,7 @@ namespace ArcaeaCoverMaker
 		/// </summary>
 		/// <param name="aspectWidth">The width of aspect ratio.</param>
 		/// <param name="aspectHeight">The height of aspect ratio.</param>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private void SetSizeWithRatio(double aspectWidth, double aspectHeight)
 		{
 			double segment = SkiaElement.RenderSize.Width / aspectWidth;
@@ -201,133 +248,155 @@ namespace ArcaeaCoverMaker
 			Height = segment * aspectHeight * ratio;
 		}
 
+		/// <summary>
+		/// Get font file path.
+		/// </summary>
+		/// <param name="isArtist">Is artist path</param>
+		/// <returns>The font file path</returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static string GetFontPath(bool isArtist)
+		{
+			return isArtist ?
+
+				IO.Path.Combine(Directories["Font"],
+					StringUtility.GetString(Config.TitleFontFilePath, Config.ArtistFontFilePath)) :
+
+				IO.Path.Combine(Directories["Font"],
+					StringUtility.GetString(Config.ArtistFontFilePath, Config.TitleFontFilePath));
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private void SkiaElement_PaintSurface(object sender, SKPaintSurfaceEventArgs e)
 		{
+			#region Capture
+
 			if (IsCapture)
 			{
+				string filePath = IO.Path.Combine(
+					Directories["Capture"],
+					$"{DateTime.Now.Ticks}.png"
+				);
+
 				e.Surface.Snapshot().ToBitmap().Save(
-					IO.Path.Combine(
-						Directories["Capture"],
-						$"{DateTime.Now.Ticks}.png"
-					),
+					filePath,
 					System.Drawing.Imaging.ImageFormat.Png
 				);
+
+				Logger.LogMessage($"Capture!{Environment.NewLine}SaveAt: {filePath}");
 				IsCapture = false;
 				return;
 			}
 
-			// SHIT WARNING //
-			//  GGGGG,Lf,   .ift:GCCCG
-			// 8@@@8G           .80000C
-			// 8@00..::,     .,.: ;000G
-			//  ;8: C0C:1, .:t;C01 10.
-			//  .,   .:       ,,.   i
-			//  f       .            ,
-			// i0t    . ,.  ;:       80
-			// C08     f.,. :.L     ,00
-			// C0000,.  .illi     ;0000
-			// 8000@0008:    .i00000000
-			//           .    ,
-			//          iG8  ttL
-			//          .t,, it,
+			#endregion
 
-			// Initialize //
+			//// SHIT WARNING ////
+
+			#region Initialize
+
 			var canvas = e.Surface.Canvas;
 			var size = e.Info.Size;
-			////////////////
 
-			canvas.Clear();
+			#endregion
 
-			if (CurrentCover == null)
+			#region Preload
+
+			canvas.Clear(); // Clear the Canvas
+
+			if (CurrentCover == null) // Fill the white color to the current cover if the current cover is empty (null)
 			{
 				CurrentCover = new(512, 512);
 				CurrentCover.Erase(SKColors.White);
 			}
-			CurrentSong ??= new();
+			CurrentSong ??= new(); // Create a new song data if the current song is empty (null)
 
-			// Draw image! //
-			Trace.WriteLine("Draw!");
-			var bgAvgColor = CurrentBackground.GetAvgColor().WithAlpha(128);
-			canvas.DrawColor(bgAvgColor);
+			#endregion
 
-			float scale = 0.9f;
+			Logger.LogMessage("Draw!");
 
-			float width = size.Width;
-			float height = size.Height;
+			#region Draw Image
+
+			#region Draw Background
+
+			var bgAvgColor = CurrentBackground.GetAvgColor().WithAlpha(128); // Background average color
+			canvas.DrawColor(bgAvgColor); // Draw background color
+
+			float scale = 0.9f; // Cover back diamond scale
+
+			float width = size.Width; // Canvas width
+			float height = size.Height; // Canvas height
 
 			// Trace.WriteLine($"Canvas: {width} / {height} = {width / height}");
 
-			float halfWidth = width / 2f;
-			float halfHeight = height / 2f;
+			float halfWidth = width / 2f; // Half Canvas width
+			float halfHeight = height / 2f; // Half Canvas width
 			canvas.DrawVerticesAspectWithBackground(
 				new SKPoint[]
 				{
-					new(halfWidth, halfHeight + halfHeight * scale),
-					new(halfWidth + halfHeight * scale, halfHeight),
-					new(halfWidth, halfHeight - halfHeight * scale),
-					new(halfWidth - halfHeight * scale, halfHeight),
+					new(halfWidth, halfHeight + halfHeight * scale), // Top
+					new(halfWidth + halfHeight * scale, halfHeight), // Right
+					new(halfWidth, halfHeight - halfHeight * scale), // Left
+					new(halfWidth - halfHeight * scale, halfHeight), // Bottom
 				},
-				size,
+				size, // Cover back diamond scale
 				CurrentBackground,
 				backgroundBlurSigma: 2f,
 				maskBlurSigma: 5f,
 				verticeColor: bgAvgColor
 			);
 
-			var avgColor = CurrentCover.GetAvgColor();
+			#endregion
+
+			#region Draw Cover
+
+			var avgColor = CurrentCover.GetAvgColor(); // Cover average color
 			float coverScale = height / 512f;
 
 			// float coverOffset = 256 * coverScale * scale * 0.65f;
 			float coverOffsetY = -35 * coverScale * scale;
-			var coverRect = new SKRect()
-				.GetOffseted(halfWidth, halfHeight + coverOffsetY)
-				.EnwidenRect(150 * coverScale);
+			var coverRect = new SKRect() // Create a new rect
+				.GetOffseted(halfWidth, halfHeight + coverOffsetY) // Offset the rect
+				.EnwidenRect(150 * coverScale); // Enwiden the rect
 
-			canvas.DrawRect(coverRect, new()
-			{
-				Color = avgColor,
-				ImageFilter = SKImageFilter.CreateBlur(15, 15),
-				IsAntialias = true
-			});
+			// Draw blurred rect to the canvas
+			canvas.DrawRect(coverRect, Helper.GetBlurPaint(avgColor, 15));
+			// Draw cover
 			canvas.DrawBitmap(CurrentCover, coverRect);
 
-			// Draw Text
+			#endregion
+
+			#region Draw Info Text
 
 			string title = CurrentSong.GetTitle(Config.Localized, Config.Difficult);
 			string artist = CurrentSong.GetArtist(Config.Localized, Config.Difficult);
 
-			using var titlePaint = new SKPaint()
-			{
-				Color = SKColors.White,
-				TextSize = 45,
-				Typeface = SKTypeface.FromFile(
-					IO.Path.Combine(Directories["Font"],
-					StringUtility.GetString(Config.TitleFontFilePath, Config.ArtistFontFilePath))),
-				TextAlign = SKTextAlign.Center,
-				IsAntialias = true
-			};
-			using var artistPaint = titlePaint.Clone();
-			artistPaint.Typeface = SKTypeface.FromFile(
-				IO.Path.Combine(Directories["Font"],
-				StringUtility.GetString(Config.ArtistFontFilePath, Config.TitleFontFilePath)));
-			artistPaint.TextSize = 35;
+			// Get the paint for drawing to the canvas
+			using var titlePaint = Helper.GetSongInfoPaint(45, GetFontPath(false));
+			using var artistPaint = Helper.GetSongInfoPaint(35, GetFontPath(true));
+
+			// Shadow width
 			float textWidth = MathF.Max(
 				titlePaint.MeasureText(title),
 				artistPaint.MeasureText(artist)
 			);
 
+			// Text width scale
+
+			// Calculate the ratio of the width of the canvas to the actual text width and limit it to 1
 			float textXScale = MathF.Min(width / (textWidth * coverScale), 1);
 			titlePaint.TextScaleX = textXScale;
 			artistPaint.TextScaleX = textXScale;
 			textWidth *= textXScale;
 
+			// Multiply the text size by the cover scale
 			titlePaint.TextSize *= coverScale;
 			artistPaint.TextSize *= coverScale;
 
+			// Calculate the offset of text and text shadow
 			float textWidthOffset = (textWidth / 2 + 20) * coverScale;
 			float textShadowOffsetTop = 119f * coverScale;
-			float textShadowOffsetBottom = 220 * coverScale;
+			float textShadowOffsetBottom = 220f * coverScale;
 
+			// Draw text back shadow to the canvas
 			canvas.DrawRect(
 				new(
 					halfWidth - textWidthOffset,
@@ -357,6 +426,7 @@ namespace ArcaeaCoverMaker
 				}
 			);
 
+			// Calculate the text positions for drawing the info texts to the canvas
 			SKPoint titleTextPos = new(halfWidth, halfHeight + 160 * coverScale);
 			SKPoint artistTextPos = new(halfWidth, halfHeight + 205 * coverScale);
 
@@ -367,32 +437,51 @@ namespace ArcaeaCoverMaker
 			titlePaint.ImageFilter = textImgFilter;
 			artistPaint.ImageFilter = textImgFilter;
 
+			// Draw song info texts to the canvas
 			canvas.DrawText(title, titleTextPos, titlePaint);
 			canvas.DrawText(artist, artistTextPos, artistPaint);
 
+			#endregion
+
+			#region Draw Difficulty
+
+			// Get difficulty color
+			var diffColor = CustomDifficultColor ?? DifficultColors[Config.Difficult];
 			float diffSize = 65 * coverScale;
+
+			// Set difficulty center position
 			SKPoint diffPos = new(halfWidth, halfHeight);
 			diffPos.Offset(150 * coverScale, -(35 + 135) * coverScale);
+
+			// Draw difficulty diamond
 			canvas.DrawDiamond(
 				diffSize,
 				diffPos,
-				DifficultColors[Config.Difficult].WithAlpha(175),
-				DifficultColors[Config.Difficult].ChangeBrightness(0.5f).WithAlpha(175),
+				diffColor.WithAlpha(175),
+				diffColor.ChangeBrightness(0.5f).WithAlpha(175),
 				SKBitmap.FromImage(e.Surface.Snapshot()),
 				size,
 				5f
 			);
+
+			// Get specified difficulty class from current song by config.difficult
 			var diff = CurrentSong.FindDifficult(Config.Difficult) ?? new();
+			// Get a type face for drawing the difficulty text
 			using var diffTextTypeface = SKTypeface.FromStream(
-				GetStreamFromExecutingAssembly("Fonts.Exo-SemiBold.ttf")
+				Helper.GetStreamFromExecutingAssembly("Fonts.Exo-SemiBold.ttf")
 			);
+			// Offset the position of the center point for drawing the difficulty text
 			diffPos.Offset(0, 45 * coverScale / 2f);
 
+			string difficutyString = string.IsNullOrEmpty(Config.CustomDifficultString) ?
+					diff == null ? "?" : diff.RatingString :
+					Config.CustomDifficultString;
+
+			// Drawing the difficulty text
 			canvas.DrawTextWithOutline(
-				string.IsNullOrEmpty(Config.CustomDifficultString) ? 
-					diff == null ? "?" : diff.RatingStr : Config.CustomDifficultString, 
+				difficutyString, 
 				diffPos, 
-				DifficultColors[Config.Difficult].WithAlpha(64).ChangeBrightness(1.25f),
+				diffColor.WithAlpha(64).ChangeBrightness(1.25f),
 				10 * coverScale,
 				new()
 				{
@@ -404,10 +493,11 @@ namespace ArcaeaCoverMaker
 				}
 			);
 
-			// Draw Title
+			#endregion
 
-			string topTitle = Config.TopTitle ?? "";
-			// Trace.WriteLine(Config.TopTitle);
+			#region Draw Top Title
+
+			string topTitleString = Config.TopTitle ?? "";
 
 			var internalTextPaint = new SKPaint()
 			{
@@ -418,15 +508,25 @@ namespace ArcaeaCoverMaker
 				TextSize = 35 * coverScale
 			};
 
-			var topTitleSize = internalTextPaint.MeasureText(topTitle);
+			var topTitleStringWidth = internalTextPaint.MeasureText(topTitleString);
+			var topTitleOffset = Config.TopTitleOffset;
 
+			// Drawing Top Title Back
 			canvas.DrawVerticesAspectWithBackground(
 				new SKPoint[]
 				{
-					new(0,0),
-					new(0,55 * coverScale),
-					new(topTitleSize,55 * coverScale),
-					new(topTitleSize + 55 * coverScale,0),
+					// Left Top
+					new(0,
+						0),
+					// Left Bottom
+					new(0,
+						(55 + topTitleOffset.Y) * coverScale),
+					// Right Bottom
+					new(topTitleStringWidth + (topTitleOffset.X * coverScale),
+						(55 + topTitleOffset.Y) * coverScale),
+					// Right Top
+					new(topTitleStringWidth + (55 + topTitleOffset.X + topTitleOffset.Y) * coverScale,
+						0),
 				},
 				size,
 				SKBitmap.FromImage(e.Surface.Snapshot()),
@@ -434,18 +534,28 @@ namespace ArcaeaCoverMaker
 				maskBlurSigma: 5f
 			);
 
+			// Drawing Top Title Text
 			canvas.DrawTextWithOutline(
-				topTitle,
-				new SKPoint(8 * coverScale, 38 * coverScale),
+				topTitleString,
+				( 
+				// Calculate the position of the top title text (string)
+					(new Vector2(8, 38) + 
+					topTitleOffset + 
+					Config.TopTitleTextOffset) * coverScale
+				).ToSKPoint(),
 				bgAvgColor.WithAlpha(64).ChangeBrightness(1.25f),
 				5 * coverScale,
 				internalTextPaint
 			);
-			/////////////////
+
+			#endregion
+
+			#endregion
 
 			// End of SkiaElement_PaintSurface
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private void HotkeyTarget(object sender, KeyEventArgs e)
 		{
 			HotkeyConfig.CheckHotkey(
@@ -455,13 +565,9 @@ namespace ArcaeaCoverMaker
 			HotkeyConfig.CheckHotkey(
 				  () => SetSizeWithRatio(16, 10), "RatioBili", e);
 			HotkeyConfig.CheckHotkey(
-				  () => SetSizeWithRatio(16,9), "RatioYtb", e);
-		}
-
-		private static IO.Stream? GetStreamFromExecutingAssembly(string path)
-		{
-			return Assembly.GetExecutingAssembly()
-				.GetManifestResourceStream("ArcaeaCoverMaker.Resources." + path);
+				  () => SetSizeWithRatio(16, 9), "RatioYtb", e);
+			HotkeyConfig.CheckHotkey(
+				  () => SetSizeWithRatio(4, 3), "Ratio4:3", e);
 		}
 	}
 }

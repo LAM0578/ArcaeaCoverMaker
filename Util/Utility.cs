@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -14,7 +15,7 @@ using Newtonsoft.Json;
 using SkiaSharp;
 
 #pragma warning disable 8625, 8602
-namespace ArcaeaCoverMaker
+namespace ArcaeaCoverMaker.Util
 {
 	internal static class Utility
 	{
@@ -237,7 +238,6 @@ namespace ArcaeaCoverMaker
 			);
 		}
 
-
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static SKRect GetOffseted(this SKRect rect, float x, float y)
 		{
@@ -334,6 +334,46 @@ namespace ArcaeaCoverMaker
 			canvas.DrawText(text, point.X, point.Y, paint);
 		}
 	}
+	
+	public static class ColorUtility
+	{
+		private static readonly char[] HexChars = "0123456789abcdefABCDEF".ToCharArray();
+		private static readonly NumberStyles HexNumberStyle = NumberStyles.HexNumber;
+		private static readonly CultureInfo HexProvider = CultureInfo.CurrentCulture;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool TryParseSKColor(string? hex, out SKColor? outColor)
+		{
+			hex = hex?.GetIntersect(HexChars);
+			if (string.IsNullOrEmpty(hex) || hex.Length < 6)
+			{
+				outColor = null;
+				return false;
+			}
+
+			if (!byte.TryParse(
+				hex[0..2], HexNumberStyle, HexProvider, out var red))
+			{
+				outColor = null;
+				return false;
+			}
+			if (!byte.TryParse(
+				hex[2..4], HexNumberStyle, HexProvider, out var blue))
+			{
+				outColor = null;
+				return false;
+			}
+			if (!byte.TryParse(
+				hex[4..6], HexNumberStyle, HexProvider, out var green))
+			{
+				outColor = null;
+				return false;
+			}
+
+			outColor = new SKColor(red, green, blue);
+			return true;
+		}
+	}
 
 	public static class StringUtility
 	{
@@ -348,5 +388,14 @@ namespace ArcaeaCoverMaker
 		{
 			return (string.IsNullOrEmpty(a) ? b : a) ?? "";
 		}
+
+		/// <summary>
+		/// Return all eligible characters from the string.
+		/// </summary>
+		/// <param name="base"></param>
+		/// <param name="compare"></param>
+		/// <returns>The eligible characters from the string.</returns>
+		public static string GetIntersect(this string @base, char[] compare)
+			=> new string(@base?.ToList().FindAll(c => compare.Contains(c)).ToArray());
 	}
 }
