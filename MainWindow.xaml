@@ -7,7 +7,8 @@
 		xmlns:skiawpf="clr-namespace:SkiaSharp.Views.WPF;assembly=SkiaSharp.Views.WPF"
         mc:Ignorable="d"
         Title="Arcaea Cover Maker" Height="450" Width="800" KeyDown="HotkeyTarget" Icon="/Icon.png">
-    <Grid>
+	<Grid>
 		<skiawpf:SKElement x:Name="SkiaElement" PaintSurface="SkiaElement_PaintSurface"/>
+		<skiawpf:SKElement x:Name="SecurityZone" PaintSurface="SecurityZone_PaintSurface"/>
 	</Grid>
 </Window>

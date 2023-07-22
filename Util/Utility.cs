@@ -373,6 +373,17 @@ namespace ArcaeaCoverMaker.Util
 			outColor = new SKColor(red, green, blue);
 			return true;
 		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static SKColor Reverse(this SKColor color)
+		{
+			return new SKColor(
+				(byte)(byte.MaxValue - color.Red),
+				(byte)(byte.MaxValue - color.Green),
+				(byte)(byte.MaxValue - color.Blue),
+				color.Alpha
+			);
+		}
 	}
 
 	public static class StringUtility

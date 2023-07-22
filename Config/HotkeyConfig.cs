@@ -53,7 +53,8 @@ namespace ArcaeaCoverMaker.Config
             ["Capture"] = new(ModifierKeys.Control, Key.S),
             ["RatioBili"] = new(ModifierKeys.Alt, Key.B),
             ["RatioYtb"] = new(ModifierKeys.Alt, Key.Y),
-            ["Ratio4:3"] = new(ModifierKeys.Alt, Key.P)
+            ["Ratio4:3"] = new(ModifierKeys.Alt, Key.P),
+            ["SwitchSecurityZone"] = new(ModifierKeys.Alt, Key.X),
         };
 
         /// <summary>

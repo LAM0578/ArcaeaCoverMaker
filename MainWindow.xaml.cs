@@ -75,6 +75,7 @@ namespace ArcaeaCoverMaker
 		private static SKBitmap CurrentCover = new();
 
 		private bool IsCapture;
+		private bool EnableSecurityZone;
 
 		private static SKColor? CustomDifficultColor = null;
 		private static readonly SKColor[] DifficultColors = new SKColor[]
@@ -211,6 +212,9 @@ namespace ArcaeaCoverMaker
 				$"BackgroundBitmaps.Count: {BackgroundBitmaps.Count}");
 
 			SkiaElement.InvalidateVisual();
+
+			EnableSecurityZone = !EnableSecurityZone;
+			SecurityZone.InvalidateVisual();
 		}
 
 		/// <summary>
@@ -233,6 +237,14 @@ namespace ArcaeaCoverMaker
 		{
 			IsCapture = true;
 			SkiaElement.InvalidateVisual();
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public Vector2 GetWindowSizeInternal(Vector2 aspect)
+		{
+			double segment = SkiaElement.RenderSize.Width / aspect.X;
+			double ratio = Height / SkiaElement.RenderSize.Height;
+			return new Vector2((float)Width, (float)(segment * aspect.Y * ratio));
 		}
 
 		/// <summary>
@@ -499,6 +511,11 @@ namespace ArcaeaCoverMaker
 
 			string topTitleString = Config.TopTitle ?? "";
 
+			if (string.IsNullOrWhiteSpace(topTitleString))
+			{
+				return;
+			}
+
 			var internalTextPaint = new SKPaint()
 			{
 				Typeface = diffTextTypeface,
@@ -556,6 +573,55 @@ namespace ArcaeaCoverMaker
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private void SecurityZone_PaintSurface(object sender, SKPaintSurfaceEventArgs e)
+		{
+			var canvas = e.Surface.Canvas;
+			var size = e.Info.Size;
+
+			canvas.Clear();
+
+			EnableSecurityZone = !EnableSecurityZone;
+
+			if (!EnableSecurityZone)
+			{
+				return;
+			}
+
+			var securityZoneSize = GetWindowSizeInternal(Config.SecurityZoneAspect);
+			float halfWidth = securityZoneSize.X / 2;
+			float halfCanvasWidth = size.Width / 2;
+
+			float ratio = size.Height / securityZoneSize.Y;
+
+			float realLeftOffset = halfCanvasWidth - halfWidth * ratio;
+			float realRightOffset = halfCanvasWidth + halfWidth * ratio;
+
+			ColorUtility.TryParseSKColor(Config.CustomSecurityZoneColorHex, out var customColor);
+			var securityZoneColor = customColor ?? CurrentBackground.GetAvgColor().Reverse();
+			byte alpha = (byte)Math.Clamp(Config.SecurityZoneColorAlpha, 0, 255);
+
+			canvas.DrawVertices(
+				SKVertexMode.TriangleFan, 
+				new SKPoint[]
+				{
+					new(realLeftOffset, size.Height),
+					new(realRightOffset, size.Height), 
+					new(realRightOffset, 0),
+					new(realLeftOffset, 0),
+				}, 
+				Enumerable.Repeat(
+					securityZoneColor.WithAlpha(alpha),
+					4
+				)
+				.ToArray(), 
+				new SKPaint()
+				{
+					IsAntialias = true
+				}
+			);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private void HotkeyTarget(object sender, KeyEventArgs e)
 		{
 			HotkeyConfig.CheckHotkey(
@@ -568,6 +634,8 @@ namespace ArcaeaCoverMaker
 				  () => SetSizeWithRatio(16, 9), "RatioYtb", e);
 			HotkeyConfig.CheckHotkey(
 				  () => SetSizeWithRatio(4, 3), "Ratio4:3", e);
+			HotkeyConfig.CheckHotkey(
+				  () => SecurityZone.InvalidateVisual(), "SwitchSecurityZone", e);
 		}
 	}
 }

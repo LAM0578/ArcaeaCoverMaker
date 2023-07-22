@@ -28,6 +28,8 @@ namespace ArcaeaCoverMaker
 		{
 			// Try get value from the dictionary TitleLocalized by the key localized
 			TitleLocalized.TryGetValue(localized, out var result);
+
+			// Return "" if the string result is null
 			return result ?? "";
 		}
 		public string GetArtist(string localized)
@@ -108,6 +110,8 @@ namespace ArcaeaCoverMaker
 			// Find the difficult class by difficult class ID
 			ArcSongDifficult? diff = FindDifficult(diffId);
 			string? result;
+
+			// Return the string Artist from the difficult class if it's not null and the result is not null or empty
 			if (diff != null && !string.IsNullOrEmpty(result = diff.GetArtist(localized)))
 				return result;
 
@@ -142,9 +146,9 @@ namespace ArcaeaCoverMaker
 		}
 
 		/// <summary>
-		/// Find the song class by the song title.
+		/// Find the song class by the serach title and the song id.
 		/// </summary>
-		/// <param name="title">Song title</param>
+		/// <param name="title">The serach title</param>
 		/// <param name="diffId">Difficult class ID</param>
 		/// <returns></returns>
 		public ArcSong? FindSong(string? title, int diffId)
@@ -152,15 +156,22 @@ namespace ArcaeaCoverMaker
 			if (title == null) return null;
 			return Songs.FindLast(s =>
 			{
-				var diff = s.FindDifficult(diffId);
-				return s.TitleLocalized.Exists(title) || diff != null && diff.TitleLocalized.Exists(title);
+				if (s.AsciiId == title)
+				{
+					return true;
+				}
+				else
+				{
+					var diff = s.FindDifficult(diffId);
+					return s.TitleLocalized.Exists(title) || diff != null && diff.TitleLocalized.Exists(title);
+				}
 			});
 		}
 
 		/// <summary>
-		/// Find the song class by the title or the song index.
+		/// Find the song class by the serach title or the song index.
 		/// </summary>
-		/// <param name="title">Song title</param>
+		/// <param name="title">The serach title</param>
 		/// <param name="index">Song index</param>
 		/// <param name="diffId">Difficult class ID</param>
 		/// <returns></returns>

@@ -15,6 +15,10 @@ Arcaea-Cover-Maker 是一款用于制作 Arcaea 自制视频封面的软件
 - 新增更改顶部标题文字位置功能
 - 修改了部分代码, ~~删除了憋憋~~
 
+>2023/7/23 (LAM)
+- 修改了曲目搜索方式
+- 新增了安全区展示 (默认 4:3, 可通过 Config 修改, 这个功能专为 Bilibili 视频封面服务)
+
 **使用教程**  
 =
 *以下路径全部使用相对路径*  
@@ -43,13 +47,19 @@ Config.json 文件说明
     "top_title_ascii": string (ASCII), // 左上角标题 (顶部标题)
     "title_font_file_path": string, // 标题字体文件路径
     "artist_font_file_path": string, // 曲师字体文件路径
-    "custom_difficult": string (ASCII), // 自定义难度字符串 (如果没写会用默认难度 (来自所选曲目))
+    "custom_difficult": string (ASCII), // 自定义难度 (如果没写会用默认难度 (来自所选曲目))
     "custom_difficult_color_hex": string (Hex), // 自定义难度颜色 (没写或者解析失败会使用默认难度颜色) (例: #1F1E33 或 #1f1e33)
+    "custom_security_zone_color_hex": string (Hex), // 自定义安全区颜色 (没写或者解析失败会使用默认安全区颜色 (背景平均色的反色)) (例: #1F1E33 或 #1f1e33)
+    "security_zone_color_alpha": int, // 安全区不透明度 (0 ~ 255)
     "top_title_offset": { // 顶部标题的位置偏移 (更改顶部标题背景板的大小)
         "x": float,
         "y": float
     },
     "top_title_text_offset": { // 顶部标题的文字偏移 (更改顶部标题文字的位置)
+        "x": float,
+        "y": float
+    },
+    "security_zone_aspect": { // 安全区比例 (这个东西针对 Bilibili 视频封面做的)
         "x": float,
         "y": float
     },
@@ -78,6 +88,10 @@ Config.json 文件说明
             "Ratio4:3": { // 使用 4:3 比例
                 "Modifier": 1, // ModifierKeys.Alt
                 "Key": 59 // Key.P
+            },
+            "SwitchSecurityZone": { // 切换安全区展示 (这个东西针对 Bilibili 视频封面做的)
+                "Modifier": 1, // ModifierKeys.Alt
+                "Key": 67 // Key.X
             }
         }
     }
@@ -90,6 +104,7 @@ Config.json 文件说明
 _**曲目查找结果将会使用所有曲目中匹配的最后一项, 如果两种方法都查找不到曲目不会报错**_ 
 
 在 title 的值不为空值的情况下:
+- 搜索所有曲目中的 id 是否有与该值相对应的曲目, 搜索不到将会使用标题搜索
 - 搜索所有曲目中的 title_localized 和对应曲目中与 rating_class 对应的难度中的 title_localized 是否有和 title 值相匹配的对象, 如果搜索不到将会使用 index (索引值) 进行搜索
 
 反之:
@@ -105,5 +120,13 @@ _**字体文件名称尽量都为 ASCII 字符, 使用非 ASCII 字符可能导�
 > 如果出现有字显示不出来一般都是字体问题, 如果不喜欢这样可以使用 [这个版本](https://github.com/LAM0578/Arcaea-Cover-Maker)
 >
 >*字体中不存在的字体会使用默认字体, 如果觉得太突兀影响美观可以找个字库较为完整的字体再来使用本重置版*
+
+---
+左上角标题说明
+-
+
+当左上角标题文本为空时将不会绘制左上角标题
+
+_**我个人建议制作 Bilibili 视频封面时不要展示左上角标题, 因为 Bilibili 视频封面的比例不固定**_
 
 ---

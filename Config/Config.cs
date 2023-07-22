@@ -32,10 +32,16 @@ namespace ArcaeaCoverMaker.Config
 		public string CustomDifficultString = "";
 		[JsonProperty("custom_difficult_color_hex")]
 		public string CustomDifficultColorHex = "";
+        [JsonProperty("custom_security_zone_color_hex")]
+        public string CustomSecurityZoneColorHex = "";
+        [JsonProperty("security_zone_color_alpha")]
+        public int SecurityZoneColorAlpha = 64;
 		[JsonProperty("top_title_offset")]
 		public Vector2 TopTitleOffset = new();
 		[JsonProperty("top_title_text_offset")]
 		public Vector2 TopTitleTextOffset = new();
+        [JsonProperty("security_zone_aspect")]
+        public Vector2 SecurityZoneAspect = new(4, 3);
 
 		[JsonProperty("hotkey_config")]
         public HotkeyConfig HotkeyConfig = new();
