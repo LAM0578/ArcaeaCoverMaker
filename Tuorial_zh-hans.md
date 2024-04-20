@@ -36,7 +36,7 @@ Config.json 文件说明
     "top_title_offset": { // 顶部标题的位置偏移 (更改顶部标题背景板的大小)
         "x": float,
         "y": float
-    },****
+    },
     "top_title_text_offset": { // 顶部标题的文字偏移 (更改顶部标题文字的位置)
         "x": float,
         "y": float
