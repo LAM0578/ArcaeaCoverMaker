@@ -21,6 +21,21 @@ namespace ArcaeaCoverMaker.Util
 				.GetManifestResourceStream("ArcaeaCoverMaker.Resources." + path);
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static SKTypeface GetFont(string dirPath, string defaultPath, string path)
+		{
+			try
+			{
+				string fontFilePath = Path.Combine(dirPath, path);
+				return File.Exists(fontFilePath) ? 
+					SKTypeface.FromFile(fontFilePath) : 
+					SKTypeface.FromStream(GetStreamFromExecutingAssembly(defaultPath));
+			}
+			catch (Exception ex)
+			{
+				return SKTypeface.FromStream(GetStreamFromExecutingAssembly(defaultPath));
+			}
+		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static SKBitmap SetInternalBacgroundIfExist(string path, string sourcePath)

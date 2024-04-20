@@ -28,14 +28,20 @@ namespace ArcaeaCoverMaker.Config
         public string TitleFontFilePath = "";
         [JsonProperty("artist_font_file_path")]
         public string ArtistFontFilePath = "";
+        [JsonProperty("difficulty_font_file_path")]
+        public string DifficultyFontFilePath = "";
 		[JsonProperty("custom_difficult")]
 		public string CustomDifficultString = "";
+		[JsonProperty("custom_difficulty_text_scale")]
+		public float CustomDifficultyTextScale = 1f;
 		[JsonProperty("custom_difficult_color_hex")]
 		public string CustomDifficultColorHex = "";
         [JsonProperty("custom_security_zone_color_hex")]
         public string CustomSecurityZoneColorHex = "";
         [JsonProperty("security_zone_color_alpha")]
         public int SecurityZoneColorAlpha = 64;
+        [JsonProperty("background_alpha")] 
+        public byte BackgroundAlpha = 255;
 		[JsonProperty("top_title_offset")]
 		public Vector2 TopTitleOffset = new();
 		[JsonProperty("top_title_text_offset")]

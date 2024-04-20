@@ -62,7 +62,7 @@ namespace ArcaeaCoverMaker.Util
 			float maskBlurSigma = 0
 		)
 		{
-			if (vertices?.Length == 0) return;
+			if (vertices?.Length == 0 || background == null) return;
 
 			//// Calculate aspect size of background ////
 
@@ -128,7 +128,7 @@ namespace ArcaeaCoverMaker.Util
 			}
 
 			// Draw vertices and mask end //
-
+			
 			canvas.DrawBitmap(background, bgRect, new()
 			{
 				ImageFilter = SKImageFilter.CreateBlur(backgroundBlurSigma, backgroundBlurSigma)
@@ -407,6 +407,6 @@ namespace ArcaeaCoverMaker.Util
 		/// <param name="compare"></param>
 		/// <returns>The eligible characters from the string.</returns>
 		public static string GetIntersect(this string @base, char[] compare)
-			=> new string(@base?.ToList().FindAll(c => compare.Contains(c)).ToArray());
+			=> new string(@base?.ToList().FindAll(compare.Contains).ToArray());
 	}
 }

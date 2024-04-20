@@ -26,14 +26,17 @@ Config.json 文件说明
     "top_title_ascii": string (ASCII), // 左上角标题 (顶部标题)
     "title_font_file_path": string, // 标题字体文件路径
     "artist_font_file_path": string, // 曲师字体文件路径
+    "difficulty_font_file_path": string, // 难度字体文件路径
     "custom_difficult": string (ASCII), // 自定义难度 (如果没写会用默认难度 (来自所选曲目))
     "custom_difficult_color_hex": string (Hex), // 自定义难度颜色 (没写或者解析失败会使用默认难度颜色) (例: #1F1E33 或 #1f1e33)
+    "custom_difficulty_text_scale": float, // 自定义难度文字大小
     "custom_security_zone_color_hex": string (Hex), // 自定义安全区颜色 (没写或者解析失败会使用默认安全区颜色 (背景平均色的反色)) (例: #1F1E33 或 #1f1e33)
     "security_zone_color_alpha": int, // 安全区不透明度 (0 ~ 255)
+    ""background_alpha": int, // 背景不透明度 (0 ~ 255)
     "top_title_offset": { // 顶部标题的位置偏移 (更改顶部标题背景板的大小)
         "x": float,
         "y": float
-    },
+    },****
     "top_title_text_offset": { // 顶部标题的文字偏移 (更改顶部标题文字的位置)
         "x": float,
         "y": float

@@ -80,10 +80,11 @@ namespace ArcaeaCoverMaker
 		private static SKColor? CustomDifficultColor = null;
 		private static readonly SKColor[] DifficultColors = new SKColor[]
 		{
-			new SKColor(0x0a,0x82,0xbe,255),
-			new SKColor(0x64,0x8c,0x3c,255),
-			new SKColor(0x50,0x19,0x4b,255),
-			new SKColor(0x82,0x23,0x28,255),
+			new SKColor(0x0a,0x82,0xbe,255), // Past
+			new SKColor(0x64,0x8c,0x3c,255), // Present
+			new SKColor(0x50,0x19,0x4b,255), // Future
+			new SKColor(0x82,0x23,0x28,255), // Beyond
+			new SKColor(0x5d,0x4e,0x76,255)  // Eternal
 		};
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -165,26 +166,23 @@ namespace ArcaeaCoverMaker
 			Config = Utility.TryDeserializeObject<CoverMakerConfig>(IO.File.ReadAllText(ConfigPath));
 			HotkeyConfig = Config.HotkeyConfig;
 
-			Config.Difficult = (Config.Difficult < 0 || Config.Difficult > 3) ? 0 : Config.Difficult;
+			Config.Difficult = (Config.Difficult < 0 || Config.Difficult > 4) ? 0 : Config.Difficult;
 			ColorUtility.TryParseSKColor(Config.CustomDifficultColorHex, out CustomDifficultColor);
 
 			// Load cover images from song folder
-			if (Songlist.Songs != null)
+			foreach (var song in Songlist.Songs)
 			{
-				foreach (var song in Songlist.Songs)
-				{
-					string songPath = IO.Path.Combine(Directories["Song"],
-						(Config.ReadNeedDownloadSongWithHead && song.NeedDownload ? "dl_" : "") + song.AsciiId);
+				string songPath = IO.Path.Combine(Directories["Song"],
+					(Config.ReadNeedDownloadSongWithHead && song.NeedDownload ? "dl_" : "") + song.AsciiId);
 
-					if (IO.Directory.Exists(songPath))
-					{
-						string coverPath = IO.Path.Combine(songPath, $"base.jpg");
-						CoverBitmaps.Add(song.AsciiId, SkiaSharpUtility.ReadBitmapFrom(coverPath));
-					}
+				if (IO.Directory.Exists(songPath))
+				{
+					string coverPath = IO.Path.Combine(songPath, $"base.jpg");
+					CoverBitmaps.Add(song.AsciiId, SkiaSharpUtility.ReadBitmapFrom(coverPath));
 				}
-				CurrentSong = Songlist.FindSong(
-					 Config.LastSelectedSongTitle, Config.LastSelectedSongIndex, Config.Difficult);
 			}
+			CurrentSong = Songlist.FindSong(
+				Config.LastSelectedSongTitle, Config.LastSelectedSongIndex, Config.Difficult);
 
 			// Load background images
 			foreach (var path in IO.Directory.GetFiles(Directories["Background"])
@@ -207,9 +205,9 @@ namespace ArcaeaCoverMaker
 
 			CoverBitmaps.TryGetValue(CurrentSong.AsciiId ?? "", out CurrentCover);
 
-			// Print load info
-			Logger.LogMessage($"CoverBitmaps.Count: {CoverBitmaps.Count}{Environment.NewLine}" +
-				$"BackgroundBitmaps.Count: {BackgroundBitmaps.Count}");
+			// // Print load info
+			// Logger.LogMessage($"CoverBitmaps.Count: {CoverBitmaps.Count}{Environment.NewLine}" +
+			// 	$"BackgroundBitmaps.Count: {BackgroundBitmaps.Count}");
 
 			SkiaElement.InvalidateVisual();
 
@@ -276,6 +274,18 @@ namespace ArcaeaCoverMaker
 				IO.Path.Combine(Directories["Font"],
 					StringUtility.GetString(Config.ArtistFontFilePath, Config.TitleFontFilePath));
 		}
+		
+		
+
+		/// <summary>
+		/// Get font file path.
+		/// </summary>
+		/// <returns>The font file path</returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static string GetFontPath(string name)
+		{
+			return IO.Path.Combine(Directories["Font"], name);
+		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private void SkiaElement_PaintSurface(object sender, SKPaintSurfaceEventArgs e)
@@ -313,13 +323,6 @@ namespace ArcaeaCoverMaker
 			#region Preload
 
 			canvas.Clear(); // Clear the Canvas
-
-			if (CurrentCover == null) // Fill the white color to the current cover if the current cover is empty (null)
-			{
-				CurrentCover = new(512, 512);
-				CurrentCover.Erase(SKColors.White);
-			}
-			CurrentSong ??= new(); // Create a new song data if the current song is empty (null)
 
 			#endregion
 
@@ -479,26 +482,29 @@ namespace ArcaeaCoverMaker
 			// Get specified difficulty class from current song by config.difficult
 			var diff = CurrentSong.FindDifficult(Config.Difficult) ?? new();
 			// Get a type face for drawing the difficulty text
-			using var diffTextTypeface = SKTypeface.FromStream(
-				Helper.GetStreamFromExecutingAssembly("Fonts.Exo-SemiBold.ttf")
-			);
+			using var diffTextTypeface = Helper.GetFont(
+				Directories["Font"], 
+				"Fonts.Exo-SemiBold.ttf",
+				Config.DifficultyFontFilePath);
 			// Offset the position of the center point for drawing the difficulty text
 			diffPos.Offset(0, 45 * coverScale / 2f);
 
 			string difficutyString = string.IsNullOrEmpty(Config.CustomDifficultString) ?
-					diff == null ? "?" : diff.RatingString :
+					diff.RatingString :
 					Config.CustomDifficultString;
 
-			// Drawing the difficulty text
-			canvas.DrawTextWithOutline(
-				difficutyString, 
+            Logger.LogMessage(difficutyString);
+
+            // Drawing the difficulty text
+            canvas.DrawTextWithOutline(
+				difficutyString,
 				diffPos, 
 				diffColor.WithAlpha(64).ChangeBrightness(1.25f),
-				10 * coverScale,
+				10 * coverScale * Config.CustomDifficultyTextScale,
 				new()
 				{
 					Typeface = diffTextTypeface,
-					TextSize = 55 * coverScale,
+					TextSize = 55 * coverScale * Config.CustomDifficultyTextScale,
 					IsAntialias = true,
 					TextAlign = SKTextAlign.Center,
 					Color = SKColors.White
@@ -516,9 +522,12 @@ namespace ArcaeaCoverMaker
 				return;
 			}
 
+			using var topTitleTypeFace = SKTypeface.FromStream(
+				Helper.GetStreamFromExecutingAssembly("Fonts.Exo-SemiBold.ttf"));
+
 			var internalTextPaint = new SKPaint()
 			{
-				Typeface = diffTextTypeface,
+				Typeface = topTitleTypeFace,
 				TextAlign = SKTextAlign.Left,
 				IsAntialias = true,
 				Color = SKColors.White,
@@ -548,7 +557,7 @@ namespace ArcaeaCoverMaker
 				size,
 				SKBitmap.FromImage(e.Surface.Snapshot()),
 				verticeColor: bgAvgColor,
-				maskBlurSigma: 5f
+				maskBlurSigma: 25f
 			);
 
 			// Drawing Top Title Text

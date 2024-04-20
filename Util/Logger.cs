@@ -45,7 +45,7 @@ namespace ArcaeaCoverMaker.Logging
 				sb.Append(msg);
 				sb.Append(newLine);
 			}
-			if (args != null && args.Length != 0)
+			if (args.Length != 0)
 			{
 				sb.Append("[Objects]");
 				sb.Append(newLine);
