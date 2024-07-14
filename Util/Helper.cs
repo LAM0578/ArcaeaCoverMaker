@@ -38,7 +38,7 @@ namespace ArcaeaCoverMaker.Util
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static SKBitmap SetInternalBacgroundIfExist(string path, string sourcePath)
+		public static SKBitmap SetBulitinBacgroundIfExist(string path, string sourcePath)
 		{
 			using var fs = File.Exists(path) ?
 				File.OpenRead(path) : GetStreamFromExecutingAssembly(sourcePath);

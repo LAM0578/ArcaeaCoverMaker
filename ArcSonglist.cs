@@ -125,9 +125,15 @@ namespace ArcaeaCoverMaker
 			return result ?? "";
 		}
 
-		public string GetBackgroundName(int diffId)
+		public string GetBackgroundFileName(int difficulty)
 		{
-			return StringUtility.GetString(AsciiBackground, FindDifficult(diffId)?.AsciiBackground);
+			return StringUtility.GetString(AsciiBackground, FindDifficult(difficulty)?.AsciiBackground);
+		}
+
+		public string GetJacketFileName(int difficulty)
+		{
+			var diff = FindDifficult(difficulty);
+			return diff is { CoverOverride: true } ? difficulty.ToString() : "base";
 		}
 	}
 	[Serializable]

@@ -269,7 +269,7 @@ namespace ArcaeaCoverMaker.Util
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static SKColor GetAvgColor(this SKBitmap bitmap)
 		{
-			if (bitmap == null) return SKColor.Empty;
+			if (bitmap.Width == 0 || bitmap.Height == 0) return SKColors.Empty;
 			using var newBitmap = bitmap.Resize(new SKImageInfo(1, 1), SKFilterQuality.High);
 			return newBitmap.Pixels[0];
 		}
