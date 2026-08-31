@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -11,7 +11,7 @@ using Newtonsoft.Json;
 namespace ArcaeaCoverMaker.Config
 {
     [Serializable]
-    internal struct HotkeyItem
+    public struct HotkeyItem
     {
         public HotkeyItem(ModifierKeys modifier, Key key)
         {
@@ -45,16 +45,15 @@ namespace ArcaeaCoverMaker.Config
     }
 
     [Serializable]
-    internal class HotkeyConfig
+    public class HotkeyConfig
     {
         public Dictionary<string, HotkeyItem> Hotkeys = new()
         {
             ["Reload"] = new(ModifierKeys.Control, Key.R),
             ["Capture"] = new(ModifierKeys.Control, Key.S),
-            ["RatioBili"] = new(ModifierKeys.Alt, Key.B),
-            ["RatioYtb"] = new(ModifierKeys.Alt, Key.Y),
-            ["Ratio4:3"] = new(ModifierKeys.Alt, Key.P),
-            ["SwitchSecurityZone"] = new(ModifierKeys.Alt, Key.X),
+            ["Aspest16By9"] = new(ModifierKeys.Alt, Key.W), // 16:9
+            ["Aspest4By3"] = new(ModifierKeys.Alt, Key.D),     // 4:3
+            ["ToggleSecurityZone"] = new(ModifierKeys.Alt, Key.X),
         };
 
         /// <summary>

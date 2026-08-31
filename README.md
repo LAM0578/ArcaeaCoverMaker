@@ -29,6 +29,15 @@ Arcaea-Cover-Maker 是一款用于制作 Arcaea 自制视频封面的软件
 - 新增 1080 曲绘读取
 - 优化部分逻辑
 
+>2026/08/31
+- 升级了 .NET 版本
+- 升级了部分 NuGet 程序包版本
+- 新增信息编辑窗口
+  - 在启动时使用 `--no-info-editor` 可以以不带信息编辑窗口的情况下启动
+- 新增 Inscribed 难度支持
+  - 启用方法和本体一致
+- 优化曲绘读取逻辑
+
 **使用教程**  
 =
 *以下路径全部使用相对路径*  
@@ -51,16 +60,20 @@ Config.json 文件说明
 {
     "index": int, // 搜索时使用的曲目索引值 (对应曲目在 songlist 中的 idx)
     "title": string, // 搜索时使用的曲目标题
-    "read_remote_dl_with_head": boolean, // 读取在 songlist 中 remote_dl 为 true 的曲目时是否带 dl_ 前缀读取
     "localized": string, // 本地化标识 (与 songlist 中对应)
-    "rating_class": int, // 难度标识 (小于 0 或大于 2 会自动设置为 0 (Past))
+    "rating_class": int, // 难度标识 (小于 0 或大于 4 会自动设置为 0 (Past))
+    "rating_class_alias": int, // 难度别名 (目前仅难度标识为 3 值为 1 时生效)
     "top_title_ascii": string (ASCII), // 左上角标题 (顶部标题)
     "title_font_file_path": string, // 标题字体文件路径
     "artist_font_file_path": string, // 曲师字体文件路径
+    "difficulty_font_file_path": string, // 难度字体文件路径
     "custom_difficult": string (ASCII), // 自定义难度 (如果没写会用默认难度 (来自所选曲目))
-    "custom_difficult_color_hex": string (Hex), // 自定义难度颜色 (没写或者解析失败会使用默认难度颜色) (例: #1F1E33 或 #1f1e33)
+    "custom_difficult_color_hex": string (Hex), // 自定义难度颜色 (解析失败会使用默认难度颜色) (例: #1F1E33 或 #1f1e33)
+    "custom_difficult_text_outline_color_hex": string (Hex), // 自定义难度文本描边颜色 (解析失败时会尝试使用自定义难度颜色, 如果自定义难度颜色解析失败则使用默认颜色) (例: #1F1E33 或 #1f1e33)
+    "custom_difficulty_text_scale": float, // 自定义难度文字大小
     "custom_security_zone_color_hex": string (Hex), // 自定义安全区颜色 (没写或者解析失败会使用默认安全区颜色 (背景平均色的反色)) (例: #1F1E33 或 #1f1e33)
     "security_zone_color_alpha": int, // 安全区不透明度 (0 ~ 255)
+    "background_alpha": int, // 背景不透明度 (0 ~ 255)
     "top_title_offset": { // 顶部标题的位置偏移 (更改顶部标题背景板的大小)
         "x": float,
         "y": float
@@ -70,6 +83,10 @@ Config.json 文件说明
         "y": float
     },
     "security_zone_aspect": { // 安全区比例 (这个东西针对 Bilibili 视频封面做的)
+        "x": float,
+        "y": float
+    },
+    "init_aspect": { // 初始化比例
         "x": float,
         "y": float
     },
@@ -87,19 +104,15 @@ Config.json 文件说明
                 "Modifier": 2, // ModifierKeys.Control
                 "Key": 62 // Key.S
             },
-            "RatioBili": { // 使用 Bilibili 视频封面比例 (16:10)
+            "Aspect16By9": { // 使用 Youtube 视频封面比例 (16:9)
                 "Modifier": 1, // ModifierKeys.Alt
-                "Key": 45 // Key.B
+                "Key": 68 // Key.W
             },
-            "RatioYtb": { // 使用 Youtube 视频封面比例 (16:9)
+            "Aspect4By3": { // 使用 4:3 比例
                 "Modifier": 1, // ModifierKeys.Alt
-                "Key": 68 // Key.Y
+                "Key": 59 // Key.D
             },
-            "Ratio4:3": { // 使用 4:3 比例
-                "Modifier": 1, // ModifierKeys.Alt
-                "Key": 59 // Key.P
-            },
-            "SwitchSecurityZone": { // 切换安全区展示 (这个东西针对 Bilibili 视频封面做的)
+            "ToggleSecurityZone": { // 切换安全区展示 (这个东西针对 Bilibili 视频封面做的)
                 "Modifier": 1, // ModifierKeys.Alt
                 "Key": 67 // Key.X
             }

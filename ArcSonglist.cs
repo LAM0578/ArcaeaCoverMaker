@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,6 +14,7 @@ namespace ArcaeaCoverMaker
 	public class ArcSongDifficult
 	{
 		[JsonProperty("ratingClass")] public int RatingClass;
+		[JsonProperty("ratingClassAlias")] public int RatingClassAlias;
 		[JsonProperty("rating")] public int Rating;
 		[JsonProperty("ratingPlus")] public bool RatingPlus;
 		[JsonProperty("bg")] public string? AsciiBackground;
@@ -32,6 +34,7 @@ namespace ArcaeaCoverMaker
 			// Return "" if the string result is null
 			return result ?? "";
 		}
+		
 		public string GetArtist(string localized)
 		{
 			// Return the string Artist if it's not null or empty
@@ -65,7 +68,6 @@ namespace ArcaeaCoverMaker
 
 		[JsonProperty("side")] public int Side;
 		[JsonProperty("bg")] public string? AsciiBackground;
-		[JsonProperty("remote_dl")] public bool NeedDownload;
 
 		[JsonProperty("difficulties")] public List<ArcSongDifficult> Difficulties = new();
 
@@ -135,6 +137,72 @@ namespace ArcaeaCoverMaker
 			var diff = FindDifficult(difficulty);
 			return diff is { CoverOverride: true } ? difficulty.ToString() : "base";
 		}
+		
+		[JsonIgnore] private static readonly List<(bool isHQ, bool isSmall)> _fullJacketConditions =
+		[
+			(true, false),  // 1080_{name}.jpg
+			(false, false), // {name}.jpg
+			(true, true),   // 1080_{name}_256.jpg
+			(false, true),  // {name}_256.jpg
+		];
+
+		[JsonIgnore] private static readonly List<(bool isHQ, bool isSmall)> _smallJacketConditions =
+		[
+			(true, true),  // 1080_{name}_256.jpg
+			(false, true), // {name}_256.jpg
+		];
+
+		private static string GetJacketPath(string projectFolder, int difficulty, bool isOverride, bool isHighQuality, bool isSmall, string suffix = ".jpg")
+		{
+			var sb = new StringBuilder(projectFolder);
+			sb.Append("/");
+			if (isHighQuality) sb.Append("1080_");
+			sb.Append(isOverride ? difficulty.ToString() : "base");
+			if (isSmall) sb.Append("_256");
+			sb.Append(suffix);
+			return sb.ToString();
+		}
+		
+		public (string fullJacketPath, string smallJacketPath) GetJacketPath(string projectFolder, int difficulty)
+		{
+			var isOverrideJacket = FindDifficult(difficulty)?.CoverOverride ?? false;
+			
+			string fullJacketPath = null;
+			string smallJacketPath = null;
+
+			if (isOverrideJacket)
+			{
+				foreach (var condition in _fullJacketConditions)
+				{
+					var path = GetJacketPath(projectFolder, difficulty, true, condition.isHQ, condition.isSmall);
+					if (!File.Exists(path)) continue;
+					fullJacketPath = path;
+					break;
+				}
+			}
+			if (fullJacketPath == null)
+			{
+				foreach (var condition in _fullJacketConditions)
+				{
+					var path = GetJacketPath(projectFolder, difficulty, false, condition.isHQ, condition.isSmall);
+					if (!File.Exists(path)) continue;
+					fullJacketPath = path;
+					break;
+				}
+			}
+			
+			foreach (var condition in _smallJacketConditions)
+			{
+				var path = GetJacketPath(projectFolder, difficulty, isOverrideJacket, condition.isHQ, condition.isSmall);
+				if (!File.Exists(path)) continue;
+				smallJacketPath = path;
+				break;
+			}
+
+			smallJacketPath ??= fullJacketPath;
+			
+			return (fullJacketPath, smallJacketPath);
+		}
 	}
 	[Serializable]
 	public class ArcSonglist
@@ -155,9 +223,9 @@ namespace ArcaeaCoverMaker
 		/// Find the song class by the serach title and the song id.
 		/// </summary>
 		/// <param name="title">The serach title</param>
-		/// <param name="diffId">Difficult class ID</param>
+		/// <param name="difficultyIndex">Difficult class ID</param>
 		/// <returns></returns>
-		public ArcSong? FindSong(string? title, int diffId)
+		public ArcSong? FindSong(string? title, int difficultyIndex)
 		{
 			if (title == null) return null;
 			return Songs.FindLast(s =>
@@ -168,7 +236,7 @@ namespace ArcaeaCoverMaker
 				}
 				else
 				{
-					var diff = s.FindDifficult(diffId);
+					var diff = s.FindDifficult(difficultyIndex);
 					return s.TitleLocalized.Exists(title) || diff != null && diff.TitleLocalized.Exists(title);
 				}
 			});
@@ -179,11 +247,11 @@ namespace ArcaeaCoverMaker
 		/// </summary>
 		/// <param name="title">The serach title</param>
 		/// <param name="index">Song index</param>
-		/// <param name="diffId">Difficult class ID</param>
+		/// <param name="difficultyIndex">Difficult class ID</param>
 		/// <returns></returns>
-		public ArcSong FindSong(string title, int index, int diffId)
+		public ArcSong FindSong(string title, int index, int difficultyIndex)
 		{
-			return FindSong(title, diffId) ?? FindSong(index) ?? new();
+			return FindSong(title, difficultyIndex) ?? FindSong(index) ?? new();
 		}
 	}
 }
